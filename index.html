@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>锌品车间设备管理系统</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:#f0f2f5;color:#1f2937;font-size:13px}
+header{background:#1e3a5f;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:17px;font-weight:600}
+header .sub{font-size:12px;opacity:.75}
+nav{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 12px;display:flex;flex-wrap:wrap;position:sticky;top:0;z-index:50}
+nav button{background:none;border:none;padding:11px 14px;font-size:13px;cursor:pointer;color:#4b5563;border-bottom:3px solid transparent}
+nav button:hover{background:#f3f4f6}
+nav button.on{color:#1e3a5f;font-weight:600;border-bottom-color:#1e3a5f}
+main{padding:16px;max-width:1600px;margin:0 auto}
+.bar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.bar h2{font-size:15px;font-weight:600;margin-right:auto}
+button.btn{background:#fff;border:1px solid #d1d5db;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12.5px}
+button.btn:hover{background:#f9fafb}
+button.primary{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+button.primary:hover{background:#2a4d7a}
+button.danger{color:#dc2626;border-color:#fca5a5}
+button.danger:hover{background:#fef2f2}
+.tbl-wrap{background:#fff;border-radius:8px;overflow:auto;box-shadow:0 1px 3px rgba(0,0,0,.08);max-height:calc(100vh - 210px)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+thead th{background:#f9fafb;text-align:left;padding:9px 10px;font-weight:600;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:2;color:#374151}
+tbody td{padding:8px 10px;border-bottom:1px solid #f3f4f6}
+tbody tr:hover{background:#f9fbfd}
+tbody tr:nth-child(even){background:#fcfcfd}
+tbody tr:nth-child(even):hover{background:#f9fbfd}
+.tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;line-height:17px}
+.t-red{background:#fee2e2;color:#b91c1c}.t-yel{background:#fef3c7;color:#b45309}
+.t-grn{background:#dcfce7;color:#15803d}.t-blu{background:#dbeafe;color:#1d4ed8}
+.t-gry{background:#f3f4f6;color:#4b5563}
+.empty{padding:50px;text-align:center;color:#9ca3af}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-body{background:#fff;border-radius:10px;width:760px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,.2)}
+.modal-body h3{font-size:15px;padding:16px 20px;border-bottom:1px solid #e5e7eb;font-weight:600}
+.form-grid{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;overflow:auto}
+.form-grid label{display:block;font-size:12px;color:#4b5563;margin-bottom:4px;font-weight:500}
+.form-grid .req{color:#dc2626;margin-left:2px}
+.form-grid input,.form-grid select,.form-grid textarea{width:100%;padding:6px 9px;border:1px solid #d1d5db;border-radius:5px;font-size:13px;font-family:inherit;background:#fff}
+.form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus{outline:none;border-color:#1e3a5f;box-shadow:0 0 0 2px rgba(30,58,95,.1)}
+.form-grid textarea{min-height:56px;resize:vertical}
+.form-grid .full{grid-column:1/-1}
+.modal-actions{padding:14px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi .card{background:#fff;border-radius:8px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #1e3a5f}
+.kpi .card .lb{font-size:12px;color:#6b7280;margin-bottom:6px}
+.kpi .card .vl{font-size:22px;font-weight:600;color:#111827}
+.kpi .card .un{font-size:12px;color:#9ca3af;margin-left:3px;font-weight:400}
+.panel{background:#fff;border-radius:8px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.panel h3{font-size:14px;font-weight:600;margin-bottom:12px;color:#374151}
+.warn{background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:9px 13px;border-radius:6px;font-size:12.5px;margin-bottom:12px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolbar input{padding:6px 10px;border:1px solid #d1d5db;border-radius:5px;font-size:12.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>锌品车间设备管理系统</h1>
+  <span class="sub">台账 · 报修 · 故障 · 备件 · 检修隐患 · 指标 · 现状 · 待办</span>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<script>
+/* ============ 字典 ============ */
+const D = {
+  cat:["电解槽系统","泵类","管道阀门","起重设备","电气整流","电气控制","自动化专机","辅助设备"],
+  process:["电解","净化","熔铸"],
+  level:["A","B","C"],
+  eqStatus:["在用正常","在用异常","备用","停机","报废"],
+  faultType:["电气故障","机械故障","控制系统故障","密封泄漏","腐蚀渗漏","其他"],
+  dealStatus:["已解决","待观察","未完成","已转大修"],
+  noFault:["计划检修/预防性维护","调试/试机/参数调整","误报/重复报修","外部原因","操作不当未造成损坏","计划性备件更换","其他"],
+  urgency:["一般","紧急","抢修"],
+  maintType:["计划检修","隐患整改","技改","点检异常"],
+  doneStatus:["未开始","进行中","已完成","已取消"],
+  risk:["高","中","低"],
+  txnType:["入库","出库","退库","盘点"],
+  yn:["是","否"],
+  orderStatus:["待派单","处理中","已完工","已关闭"]
+};
+
+/* ============ 初始数据 ============ */
+function seed(){
+  const eq=[
+    ["1501001","1号多功能自动行车","起重设备","电解","剥锌区域","A","是","10.7T/13.5m","在用正常","江改"],
+    ["1501002","2号多功能自动行车","起重设备","电解","剥锌区域","A","是","10.7T/13.5m","在用正常","江改"],
+    ["1501003","1号剥锌机","自动化专机","电解","剥锌区域","A","是","200片/小时","在用正常","江改"],
+    ["1501004","2号剥锌机","自动化专机","电解","剥锌区域","A","是","200片/小时","在用正常","江改"],
+    ["1501005","刷洗机","自动化专机","电解","剥锌区域","A","是","400片/小时","在用正常","江改"],
+    ["1503001","拍平机","自动化专机","电解","拍平区域","A","是","P=0.5kW","在用正常","江改"],
+    ["1503002","阳极小车","起重设备","电解","拍平区域","A","否","40m/h","在用正常","江改"],
+    ["1503003","南阳极吊车","起重设备","电解","拍平区域","A","否","","在用正常","江改"],
+    ["1503004","北阳极吊车","起重设备","电解","拍平区域","A","否","","在用正常","江改"],
+    ["1502017","2#循环水泵房离心泵","泵类","电解","工艺区域","A","否","300S58A","在用异常","江改"],
+    ["1502018","1#废液循环泵","泵类","电解","工艺区域","B","是","JFZ250-430D1","在用正常","江改"],
+    ["1502020","3#废液循环泵","泵类","电解","工艺区域","B","是","JFZ250-430D1","在用异常","江改"],
+    ["1511042","3000kW熔锌感应电炉","辅助设备","熔铸","熔铸厂房","A","否","GYX3000-140","在用正常","江改"],
+    ["1511052","自动码垛机械手","自动化专机","熔铸","熔铸厂房","A","否","IRB 6700","在用正常","江改"],
+    ["1511074","1#软化水泵","泵类","熔铸","熔铸厂房","A","否","","在用正常","江改"],
+    ["1521074","一净搅拌机1#","辅助设备","净化","净化厂房","B","是","YE2-225S-4","在用正常","苟胜华"],
+    ["1521001","锌粉库2T防爆葫芦","起重设备","净化","净化厂房","C","否","BZD31-4","在用正常",""],
+    ["1512008","无芯炉","辅助设备","熔铸","锌粉制备厂房","A","是","P=150kW","在用正常","江改"]
+  ].map(a=>({id:a[0],name:a[1],cat:a[2],process:a[3],area:a[4],level:a[5],three:a[6],model:a[7],status:a[8],owner:a[9],maker:"",startDate:"",remark:""}));
+
+  const fault=[
+    {id:"GZ202610001",occurTime:"2026-10-31T20:00",recoverTime:"2026-10-31T23:00",eqId:"1501001",part:"钢丝绳定滑轮",symptom:"西北角钢丝绳定滑轮固定螺栓脱落，绝缘子损坏",type:"机械故障",cause:"螺栓松动",action:"更换螺栓和绝缘子各两个",handler:"陈红/大方起重",status:"已解决",valid:"有效",repairId:"",parts:"",remark:""},
+    {id:"GZ202610002",occurTime:"2026-10-30T09:00",recoverTime:"2026-10-30T11:30",eqId:"1501003",part:"卡子",symptom:"东南角卡子脱焊",type:"机械故障",cause:"焊接疲劳",action:"补焊",handler:"中金工程",status:"已解决",valid:"有效",repairId:"",parts:"",remark:""},
+    {id:"GZ202610003",occurTime:"2026-10-14T14:00",recoverTime:"2026-10-14T15:00",eqId:"1511052",part:"线型感应开关",symptom:"翻转完后不会放锭",type:"电气故障",cause:"感应开关损坏",action:"更换线型感应开关",handler:"苟胜华",status:"已解决",valid:"有效",repairId:"",parts:"",remark:""},
+    {id:"GZ202610004",occurTime:"2026-10-07T09:00",recoverTime:"2026-10-07T13:00",eqId:"1503001",part:"拍平气缸",symptom:"拍平气缸漏气",type:"机械故障",cause:"密封圈老化",action:"更换密封圈",handler:"中金工程",status:"已解决",valid:"有效",repairId:"",parts:"",remark:""},
+    {id:"GZ202610005",occurTime:"2026-10-22T08:00",recoverTime:"2026-10-22T09:00",eqId:"1502020",part:"电气回路",symptom:"2、3号废液循环泵跳停",type:"电气故障",cause:"液位波动导致联锁停机",action:"重启，检查液位",handler:"班组",status:"已解决",valid:"有效",repairId:"",parts:"",remark:""}
+  ];
+
+  const repair=[
+    {id:"BX2026110401",reportTime:"2026-11-04T08:10",reporter:"潘金新",way:"电话",eqId:"1502017",desc:"变频器报电源故障，泵无法启动",urgency:"抢修",dispatchTime:"2026-11-04T08:15",assignee:"苟胜华",arriveTime:"2026-11-04T08:30",finishTime:"",action:"临时接线应急，变频器送修",parts:"",isFault:"",noFaultReason:"",judgeNote:"",judgeBy:"",judgeTime:"",faultId:"",status:"处理中"},
+    {id:"BX2026110301",reportTime:"2026-11-03T20:00",reporter:"陈红",way:"微信",eqId:"1501004",desc:"北上轮胎减速机损坏",urgency:"紧急",dispatchTime:"2026-11-03T20:10",assignee:"陈红",arriveTime:"2026-11-03T20:30",finishTime:"2026-11-04T01:30",action:"更换北上轮胎减速机",parts:"",isFault:"是",noFaultReason:"",judgeNote:"",judgeBy:"江改",judgeTime:"2026-11-04T08:00",faultId:"GZ202611001",status:"已完工"},
+    {id:"BX2026110201",reportTime:"2026-11-02T14:20",reporter:"夏长华",way:"巡检",eqId:"1503001",desc:"南面开合气缸漏气大",urgency:"紧急",dispatchTime:"2026-11-02T14:30",assignee:"中金工程",arriveTime:"2026-11-02T15:00",finishTime:"2026-11-02T18:00",action:"更换拍平气缸，加装导轮",parts:"",isFault:"是",noFaultReason:"",judgeNote:"",judgeBy:"江改",judgeTime:"2026-11-03T09:00",faultId:"GZ202611002",status:"已关闭"}
+  ];
+
+  const spare=[
+    {id:"BJ-001",name:"机械密封",model:"配套JFZ250-430D1",cat:"泵类",unit:"套",safeStock:2,location:"备件库A-1",price:1200,key:"是",supplier:"中金工程",remark:""},
+    {id:"BJ-002",name:"驱动轮轴承",model:"配套10.7T行车",cat:"起重设备",unit:"个",safeStock:4,location:"备件库A-2",price:860,key:"是",supplier:"大方起重",remark:""},
+    {id:"BJ-003",name:"气缸密封圈",model:"Φ125",cat:"自动化专机",unit:"套",safeStock:6,location:"备件库B-1",price:120,key:"否",supplier:"中金工程",remark:""},
+    {id:"BJ-004",name:"光电开关",model:"E3Z-D61",cat:"电气控制",unit:"个",safeStock:5,location:"备件库C-1",price:180,key:"否",supplier:"",remark:""},
+    {id:"BJ-005",name:"刷洗机皮带",model:"配套1号刷洗机",cat:"自动化专机",unit:"条",safeStock:3,location:"备件库B-2",price:450,key:"否",supplier:"中金工程",remark:""}
+  ];
+
+  const spareTxn=[
+    {id:"L202610001",date:"2026-10-07",spareId:"BJ-003",type:"出库",qty:1,faultId:"GZ202610004",taker:"中金工程",remark:""},
+    {id:"L202610002",date:"2026-10-14",spareId:"BJ-004",type:"出库",qty:1,faultId:"GZ202610003",taker:"苟胜华",remark:""},
+    {id:"L202610003",date:"2026-10-20",spareId:"BJ-002",type:"入库",qty:4,faultId:"",taker:"",remark:"采购到货"},
+    {id:"L202610004",date:"2026-10-31",spareId:"BJ-002",type:"出库",qty:2,faultId:"GZ202610001",taker:"陈红",remark:""}
+  ];
+
+  const maint=[
+    {id:"1",type:"计划检修",content:"电解液循环泵解体检查，更换机封",eqId:"1502018",owner:"江改",planDate:"2026-11-10",actualDate:"",status:"未开始",risk:"高",remark:"需停机"},
+    {id:"2",type:"计划检修",content:"整流机组红外测温、柜内清灰",eqId:"",owner:"张工",planDate:"2026-11-15",actualDate:"",status:"未开始",risk:"中",remark:""},
+    {id:"3",type:"隐患整改",content:"1#废液循环泵上方管道加支撑",eqId:"1502018",owner:"江改",planDate:"2026-10-30",actualDate:"",status:"进行中",risk:"高",remark:"管道受力导致振动大"},
+    {id:"4",type:"隐患整改",content:"2#循环水泵房离心泵变频器更换",eqId:"1502017",owner:"苟胜华",planDate:"2026-10-25",actualDate:"",status:"进行中",risk:"高",remark:"已送修，临时接线"},
+    {id:"5",type:"计划检修",content:"3#废液循环泵底架更换",eqId:"1502020",owner:"江改",planDate:"2026-09-30",actualDate:"2026-09-28",status:"已完成",risk:"中",remark:""}
+  ];
+
+  const todo=[
+    {id:"1",project:"钢结构隐患整改",content:"罐区钢结构",team:"中金工程",cost:"专业维修-机械",parts:"",area:"电解",owner:"江改",deadline:"2026-11-30",progress:"准备施工，正在开挖立柱支墩基础",remark:"",status:"进行中"},
+    {id:"2",project:"钢结构隐患整改",content:"泵区钢结构",team:"中金工程",cost:"",parts:"",area:"电解",owner:"江改",deadline:"2026-11-15",progress:"正在施工",remark:"",status:"进行中"},
+    {id:"3",project:"阳极泥管道处理",content:"大修遗留管桥阳极泥管道转运分类入库",team:"中金工程项目部",cost:"大修",parts:"/",area:"电解",owner:"潘金新",deadline:"2026-11-15",progress:"已完成拆卸，待集中处理",remark:"",status:"进行中"},
+    {id:"4",project:"5号废液循环泵安装修复",content:"机封漏，泵轴损坏，待机封备件到货更换",team:"中金工程",cost:"维保",parts:"",area:"电解",owner:"江改",deadline:"2026-11-08",progress:"预计11.5到货",remark:"",status:"进行中"},
+    {id:"5",project:"风冷塔区域防腐",content:"防腐施工",team:"中金工程/河南祥光",cost:"土建+防腐",parts:"防腐砖甲供",area:"电解",owner:"潘金新",deadline:"2026-11-10",progress:"已完成施工",remark:"",status:"已完成"}
+  ];
+
+  return {equipment:eq,repair,fault,spare,spareTxn,maint,todo};
+}
+
+/* ============ 数据层 ============ */
+const KEY="eqms_v1";
+let DB;
+try{ DB=JSON.parse(localStorage.getItem(KEY))||seed(); }catch(e){ DB=seed(); }
+function save(){ localStorage.setItem(KEY,JSON.stringify(DB)); }
+function eqById(id){ return DB.equipment.find(e=>e.id===id); }
+function spareById(id){ return DB.spare.find(s=>s.id===id); }
+
+/* ============ 下拉选项（名称（编号），按分组） ============ */
+function eqOptions(){
+  const g={};
+  DB.equipment.forEach(e=>{ const k=e.process||"其他"; (g[k]=g[k]||[]).push({v:e.id,t:e.name+"（"+e.id+"）"}); });
+  return Object.entries(g).map(([group,items])=>({group,items}));
+}
+function spareOptions(){
+  const g={};
+  DB.spare.forEach(s=>{ const k=s.cat||"其他"; (g[k]=g[k]||[]).push({v:s.id,t:s.name+"（"+s.id+"）"}); });
+  return Object.entries(g).map(([group,items])=>({group,items}));
+}
+
+/* ============ 计算 ============ */
+function hours(a,b){ if(!a||!b) return ""; const h=(new Date(b)-new Date(a))/36e5; if(isNaN(h)) return ""; return Math.round(h*10)/10; }
+function faultDur(f){ return hours(f.occurTime,f.recoverTime)||0; }
+function faultRepeat(f){
+  if(!f.occurTime) return "";
+  return DB.fault.some(o=>o.id!==f.id&&o.eqId===f.eqId&&o.part===f.part&&o.valid==="有效"&&o.occurTime&&new Date(o.occurTime)<new Date(f.occurTime)&&(new Date(f.occurTime)-new Date(o.occurTime))/864e5<=90)?"是":"否";
+}
+function spareIn(id){ return DB.spareTxn.filter(t=>t.spareId===id&&t.type==="入库").reduce((a,t)=>a+(+t.qty||0),0); }
+function spareOut(id){ return DB.spareTxn.filter(t=>t.spareId===id&&t.type==="出库").reduce((a,t)=>a+(+t.qty||0),0); }
+function spareBack(id){ return DB.spareTxn.filter(t=>t.spareId===id&&t.type==="退库").reduce((a,t)=>a+(+t.qty||0),0); }
+function spareStock(id){ return spareIn(id)-spareOut(id)+spareBack(id); }
+function maintOverdue(m){
+  if(!m.planDate||m.status==="已完成"||m.status==="已取消") return "";
+  return new Date()>new Date(m.planDate)?"逾期":"";
+}
+function todoRemain(t){
+  if(!t.deadline||t.status==="已完成"||t.status==="已取消") return "";
+  return Math.round((new Date(t.deadline)-new Date())/864e5);
+}
+
+/* ============ 指标 ============ */
+function monthRange(ym){ const [y,m]=ym.split("-").map(Number); return [new Date(y,m-1,1),new Date(y,m,1)]; }
+function inMonth(dt,s,e){ if(!dt) return false; const d=new Date(dt); return d>=s&&d<e; }
+function metrics(ym){
+  const [s,e]=monthRange(ym), eq=DB.equipment;
+  const total=eq.length, key=eq.filter(x=>x.level==="A").length;
+  const good=eq.filter(x=>x.status==="在用正常").length;
+  const goodKey=eq.filter(x=>x.level==="A"&&x.status==="在用正常").length;
+  const vf=DB.fault.filter(f=>f.valid==="有效");
+  const mf=vf.filter(f=>inMonth(f.occurTime,s,e));
+  const mfKey=mf.filter(f=>{const q=eqById(f.eqId);return q&&q.level==="A";});
+  const dur=mf.reduce((a,f)=>a+faultDur(f),0);
+  const days=Math.round((e-s)/864e5);
+  const mtbf=mf.length?Math.round(days*24*total/mf.length*10)/10:"";
+  const mttr=mf.length?Math.round(dur/mf.length*10)/10:"";
+  const planM=DB.maint.filter(m=>m.type==="计划检修"&&inMonth(m.planDate,s,e));
+  const planDone=planM.filter(m=>m.status==="已完成");
+  const hidM=DB.maint.filter(m=>m.type==="隐患整改"&&inMonth(m.planDate,s,e));
+  const hidDone=hidM.filter(m=>m.status==="已完成");
+  const spCost=DB.spareTxn.filter(t=>t.type==="出库"&&inMonth(t.date,s,e)).reduce((a,t)=>a+((+t.qty||0)*(spareById(t.spareId)?.price||0)),0);
+  return {ym,total,key,good,goodKey,goodRate:total?good/total:0,keyGoodRate:key?goodKey/key:0,
+    mf,mfKey,dur,mtbf,mttr,planTotal:planM.length,planDone:planDone.length,
+    planRate:planM.length?planDone.length/planM.length:0,
+    hidTotal:hidM.length,hidDone:hidDone.length,hidRate:hidM.length?hidDone.length/hidM.length:0,spCost};
+}
+function groupStat(arr,field,catList,durFn){
+  return catList.map(c=>{ const g=arr.filter(x=>x[field]===c); return {name:c,cnt:g.length,dur:g.reduce((a,x)=>a+(durFn?durFn(x):0),0)}; });
+}
+
+/* ============ 模块定义 ============ */
+const M = {
+  equipment:{name:"设备台账",pk:"id",cols:["id","name","cat","process","area","level","key","status","owner"],
+    fields:[
+      {k:"id",lb:"设备编号",req:1},{k:"name",lb:"设备名称",req:1},
+      {k:"cat",lb:"设备类别",t:"sel",o:D.cat},{k:"process",lb:"工序",t:"sel",o:D.process},
+      {k:"area",lb:"区域"},{k:"level",lb:"重要程度",t:"sel",o:D.level,req:1},
+      {k:"key",lb:"是否关键",calc:r=>r.level==="A"?"是":"否"},
+      {k:"three",lb:"是否三率统计",t:"sel",o:D.yn},{k:"model",lb:"型号规格"},
+      {k:"maker",lb:"生产厂家"},{k:"startDate",lb:"启用日期",t:"date"},
+      {k:"status",lb:"使用状态",t:"sel",o:D.eqStatus},{k:"owner",lb:"责任人"},
+      {k:"remark",lb:"备注",t:"ta",full:1}]},
+  repair:{name:"报修工单",pk:"id",cols:["id","reportTime","eqName","urgency","assignee","status","isFault"],
+    fields:[
+      {k:"id",lb:"报修单号",req:1},{k:"reportTime",lb:"报修时间",t:"dt",req:1},
+      {k:"reporter",lb:"报修人"},{k:"way",lb:"报修方式",t:"sel",o:["电话","微信","扫码","巡检"]},
+      {k:"eqId",lb:"设备名称",t:"sel",o:eqOptions,req:1},
+      {k:"eqName",lb:"设备名称显示",calc:r=>eqById(r.eqId)?.name||""},
+      {k:"level",lb:"重要程度",calc:r=>eqById(r.eqId)?.level||""},
+      {k:"desc",lb:"故障描述",t:"ta",full:1,req:1},
+      {k:"urgency",lb:"紧急程度",t:"sel",o:D.urgency},{k:"dispatchTime",lb:"派单时间",t:"dt"},
+      {k:"assignee",lb:"接单人"},{k:"arriveTime",lb:"到场时间",t:"dt"},
+      {k:"finishTime",lb:"完工时间",t:"dt"},{k:"action",lb:"处理措施",t:"ta"},
+      {k:"parts",lb:"更换备件"},{k:"responseH",lb:"响应时长(h)",calc:r=>hours(r.reportTime,r.arriveTime)},
+      {k:"repairH",lb:"维修时长(h)",calc:r=>hours(r.arriveTime,r.finishTime)},
+      {k:"isFault",lb:"是否计为故障",t:"sel",o:D.yn},
+      {k:"noFaultReason",lb:"不计故障原因",t:"sel",o:D.noFault},
+      {k:"judgeNote",lb:"判定说明",t:"ta"},{k:"judgeBy",lb:"判定人"},
+      {k:"judgeTime",lb:"判定时间",t:"dt"},{k:"faultId",lb:"关联故障单号"},
+      {k:"status",lb:"工单状态",t:"sel",o:D.orderStatus}]},
+  fault:{name:"故障记录",pk:"id",cols:["id","occurTime","eqName","level","type","duration","status","valid","repeat"],
+    fields:[
+      {k:"id",lb:"故障单号",req:1},{k:"occurTime",lb:"故障发生时间",t:"dt",req:1},
+      {k:"recoverTime",lb:"恢复时间",t:"dt"},{k:"eqId",lb:"设备名称",t:"sel",o:eqOptions,req:1},
+      {k:"eqName",lb:"设备名称显示",calc:r=>eqById(r.eqId)?.name||""},
+      {k:"level",lb:"重要程度",calc:r=>eqById(r.eqId)?.level||""},
+      {k:"part",lb:"故障部位"},{k:"symptom",lb:"故障现象",t:"ta",full:1},
+      {k:"type",lb:"故障类型",t:"sel",o:D.faultType,req:1},{k:"cause",lb:"原因分析",t:"ta"},
+      {k:"action",lb:"处理措施",t:"ta"},{k:"handler",lb:"处理人员"},
+      {k:"status",lb:"处理状态",t:"sel",o:D.dealStatus},
+      {k:"repeat",lb:"是否重复",calc:r=>faultRepeat(r)},
+      {k:"valid",lb:"故障状态",t:"sel",o:["有效","作废"]},
+      {k:"duration",lb:"停机时长(h)",calc:r=>faultDur(r)},
+      {k:"repairId",lb:"关联报修单"},{k:"parts",lb:"消耗备件"},{k:"remark",lb:"备注",t:"ta"}]},
+  spare:{name:"备件台账",pk:"id",cols:["id","name","model","cat","stock","safeStock","warn","price"],
+    fields:[
+      {k:"id",lb:"备件编码",req:1},{k:"name",lb:"备件名称",req:1},{k:"model",lb:"规格型号"},
+      {k:"cat",lb:"适用设备类别",t:"sel",o:D.cat},{k:"unit",lb:"单位"},
+      {k:"safeStock",lb:"安全库存",t:"num"},{k:"stock",lb:"当前库存",calc:r=>spareStock(r.id)},
+      {k:"warn",lb:"预警",calc:r=>spareStock(r.id)<=(+r.safeStock||0)?"⚠补货":""},
+      {k:"location",lb:"存放位置"},{k:"price",lb:"单价",t:"num"},
+      {k:"key",lb:"是否关键备件",t:"sel",o:D.yn},{k:"supplier",lb:"供应商"},{k:"remark",lb:"备注",t:"ta"}]},
+  spareTxn:{name:"备件流水",pk:"id",cols:["id","date","spareName","type","qty","amount","taker"],
+    fields:[
+      {k:"id",lb:"流水号",req:1},{k:"date",lb:"日期",t:"date",req:1},
+      {k:"spareId",lb:"备件名称",t:"sel",o:spareOptions,req:1},
+      {k:"spareName",lb:"备件名称显示",calc:r=>spareById(r.spareId)?.name||""},
+      {k:"type",lb:"类型",t:"sel",o:D.txnType,req:1},{k:"qty",lb:"数量",t:"num",req:1},
+      {k:"faultId",lb:"关联故障单号"},{k:"taker",lb:"领用人"},
+      {k:"price",lb:"单价",calc:r=>spareById(r.spareId)?.price||0},
+      {k:"amount",lb:"金额",calc:r=>Math.round((+r.qty||0)*(spareById(r.spareId)?.price||0)*100)/100},
+      {k:"remark",lb:"备注",t:"ta"}]},
+  maint:{name:"检修与隐患",pk:"id",cols:["id","type","content","eqName","owner","planDate","status","risk","overdue"],
+    fields:[
+      {k:"id",lb:"序号",req:1},{k:"type",lb:"类型",t:"sel",o:D.maintType,req:1},
+      {k:"content",lb:"事项内容",t:"ta",full:1,req:1},
+      {k:"eqId",lb:"设备名称",t:"sel",o:eqOptions},
+      {k:"eqName",lb:"设备名称显示",calc:r=>eqById(r.eqId)?.name||""},
+      {k:"owner",lb:"责任人"},{k:"planDate",lb:"计划完成日期",t:"date"},
+      {k:"actualDate",lb:"实际完成日期",t:"date"},{k:"status",lb:"完成状态",t:"sel",o:D.doneStatus},
+      {k:"risk",lb:"风险等级",t:"sel",o:D.risk},
+      {k:"overdue",lb:"是否逾期",calc:r=>maintOverdue(r)},{k:"remark",lb:"备注",t:"ta"}]},
+  todo:{name:"待办清单",pk:"id",cols:["id","project","content","area","owner","deadline","status","remain","overdue"],
+    fields:[
+      {k:"id",lb:"序号",req:1},{k:"project",lb:"项目"},{k:"content",lb:"具体事项",t:"ta",full:1},
+      {k:"team",lb:"施工队伍"},{k:"cost",lb:"费用途径"},{k:"parts",lb:"材料备件"},
+      {k:"area",lb:"属地/责任区",t:"sel",o:D.process},{k:"owner",lb:"负责人"},
+      {k:"deadline",lb:"完成时限",t:"date"},{k:"progress",lb:"完成情况",t:"ta"},
+      {k:"remark",lb:"备注",t:"ta"},{k:"status",lb:"状态",t:"sel",o:D.doneStatus},
+      {k:"remain",lb:"剩余天数",calc:r=>todoRemain(r)},
+      {k:"overdue",lb:"逾期",calc:r=>{const d=todoRemain(r);return d!==""&&d<0?"逾期":"";}}]}
+};
+
+/* ============ 渲染 ============ */
+let curTab="equipment";
+const TABS=[["equipment","设备台账"],["repair","报修工单"],["fault","故障记录"],["spare","备件台账"],
+  ["spareTxn","备件流水"],["maint","检修与隐患"],["metrics","运行指标"],["status","设备现状"],["todo","待办清单"]];
+
+function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function val(r,k,f){
+  if(f&&f.calc) return f.calc(r);
+  if(k==="eqName") return eqById(r.eqId)?.name||"";
+  if(k==="level") return eqById(r.eqId)?.level||"";
+  if(k==="spareName") return spareById(r.spareId)?.name||"";
+  if(k==="key") return r.level==="A"?"是":"否";
+  if(k==="duration") return faultDur(r);
+  if(k==="repeat") return faultRepeat(r);
+  if(k==="stock") return spareStock(r.id);
+  if(k==="warn") return spareStock(r.id)<=(+r.safeStock||0)?"⚠补货":"";
+  if(k==="amount") return Math.round((+r.qty||0)*(spareById(r.spareId)?.price||0)*100)/100;
+  if(k==="price"&&r.spareId) return spareById(r.spareId)?.price||"";
+  if(k==="overdue"&&r.planDate!==undefined) return maintOverdue(r);
+  if(k==="overdue"&&r.deadline!==undefined){const d=todoRemain(r);return d!==""&&d<0?"逾期":"";}
+  if(k==="remain") return todoRemain(r);
+  return r[k]??"";
+}
+function colLabel(mod,k){ const f=M[mod].fields.find(x=>x.k===k); return f?f.lb:k; }
+function fmtCell(mod,k,v){
+  if(v===""||v===null||v===undefined) return "";
+  if(k==="level"||k==="key"){ const c=v==="A"?"t-red":v==="B"?"t-yel":"t-gry"; return `<span class="tag ${c}">${esc(v)}</span>`; }
+  if(k==="valid") return `<span class="tag ${v==="有效"?"t-grn":"t-gry"}">${esc(v)}</span>`;
+  if(k==="status"||k==="overdue"||k==="warn"||k==="isFault"){
+    const red=["逾期","⚠补货","在用异常","未完成","抢修"].includes(v);
+    const grn=["已解决","已完成","在用正常","有效"].includes(v);
+    if(v==="是"&&k==="isFault") return `<span class="tag t-grn">是</span>`;
+    if(red) return `<span class="tag t-red">${esc(v)}</span>`;
+    if(grn) return `<span class="tag t-grn">${esc(v)}</span>`;
+    return `<span class="tag t-blu">${esc(v)}</span>`;
+  }
+  if(k==="repeat") return v==="是"?`<span class="tag t-red">重复</span>`:`<span class="tag t-gry">否</span>`;
+  return esc(v);
+}
+
+function renderNav(){
+  document.getElementById("nav").innerHTML=TABS.map(([k,n])=>`<button data-tab="${k}" class="${k===curTab?'on':''}">${n}</button>`).join("");
+}
+function render(){
+  renderNav();
+  const main=document.getElementById("main");
+  if(curTab==="metrics"){ main.innerHTML=renderMetrics(); bindMetrics(); return; }
+  if(curTab==="status"){ main.innerHTML=renderStatus(); return; }
+  const m=M[curTab];
+  const rows=DB[curTab]||[];
+  let html=`<div class="bar"><h2>${m.name} <span style="color:#9ca3af;font-weight:400;font-size:12px">共 ${rows.length} 条</span></h2>
+    <button class="btn primary" data-act="add" data-mod="${curTab}">+ 新增</button>
+    <button class="btn" data-act="export" data-mod="${curTab}">导出 CSV</button></div>`;
+  if(curTab==="repair"){
+    const bad=rows.filter(r=>r.status==="已完工"&&!r.isFault);
+    if(bad.length) html+=`<div class="warn">⚠ 有 ${bad.length} 张已完工工单尚未判定"是否计为故障"，请设备员关闭工单前确认。</div>`;
+  }
+  html+=`<div class="tbl-wrap"><table><thead><tr>`;
+  m.cols.forEach(c=>html+=`<th>${colLabel(curTab,c)}</th>`);
+  html+=`<th>操作</th></tr></thead><tbody>`;
+  if(!rows.length) html+=`<tr><td colspan="${m.cols.length+1}" class="empty">暂无数据，点右上角"新增"</td></tr>`;
+  rows.forEach((r,i)=>{
+    html+="<tr>";
+    m.cols.forEach(c=>{ const f=m.fields.find(x=>x.k===c); html+=`<td>${fmtCell(curTab,c,val(r,c,f))}</td>`; });
+    html+=`<td><button class="btn" data-act="edit" data-mod="${curTab}" data-i="${i}">编辑</button>
+      <button class="btn danger" data-act="del" data-mod="${curTab}" data-i="${i}">删除</button></td></tr>`;
+  });
+  html+="</tbody></table></div>";
+  main.innerHTML=html;
+}
+
+/* ============ 指标 ============ */
+let curYM="2026-11";
+function renderMetrics(){
+  const x=metrics(curYM);
+  const pct=v=>v?(v*100).toFixed(1)+"%":"—";
+  const card=(lb,vl,un)=>`<div class="card"><div class="lb">${lb}</div><div class="vl">${vl}${un?`<span class="un">${un}</span>`:""}</div></div>`;
+  let h=`<div class="bar"><h2>运行指标</h2>
+    <label style="font-size:12.5px;color:#4b5563">统计月份
+    <input type="month" id="ym" value="${curYM}" style="padding:5px 9px;border:1px solid #d1d5db;border-radius:5px;margin-left:6px"></label></div>`;
+  h+=`<div class="kpi">
+    ${card("设备总台数",x.total,"台")}${card("关键设备台数",x.key,"台")}
+    ${card("完好设备台数",x.good,"台")}${card("设备完好率",pct(x.goodRate))}
+    ${card("关键设备完好率",pct(x.keyGoodRate))}${card("故障次数",x.mf.length,"次")}
+    ${card("关键设备故障",x.mfKey.length,"次")}${card("停机总时长",x.dur.toFixed(1),"h")}
+    ${card("平均处理时长",x.mttr===""?"—":x.mttr,"h")}${card("MTBF",x.mtbf===""?"—":x.mtbf,"h")}
+    ${card("计划检修完成率",pct(x.planRate))}${card("隐患闭环率",pct(x.hidRate))}
+    ${card("备件消耗费用",x.spCost.toFixed(0),"元")}</div>`;
+
+  const sub=(title,arr,tot)=>{
+    let t=`<div class="panel"><h3>${title}</h3><table><thead><tr><th>项目</th><th>次数</th><th>停机时长(h)</th><th>占比</th></tr></thead><tbody>`;
+    arr.forEach(a=>{ if(a.cnt===0) return; t+=`<tr><td>${esc(a.name)}</td><td>${a.cnt}</td><td>${a.dur.toFixed(1)}</td><td>${tot?((a.cnt/tot*100).toFixed(1)+"%"):"—"}</td></tr>`; });
+    t+=`<tr style="font-weight:600;background:#f9fafb"><td>合计</td><td>${arr.reduce((s,a)=>s+a.cnt,0)}</td><td>${arr.reduce((s,a)=>s+a.dur,0).toFixed(1)}</td><td></td></tr>`;
+    return t+"</tbody></table></div>";
+  };
+  h+=sub("按故障类型统计",groupStat(x.mf,"type",D.faultType,faultDur),x.mf.length);
+  h+=sub("按设备类别统计",groupStat(x.mf.map(f=>({...f,cat:eqById(f.eqId)?.cat||""})),"cat",D.cat,faultDur),x.mf.length);
+  h+=sub("按重要程度统计",groupStat(x.mf.map(f=>({...f,lv:eqById(f.eqId)?.level||""})),"lv",["A","B","C"],faultDur),x.mf.length);
+
+  const ov=DB.maint.filter(m=>maintOverdue(m)==="逾期");
+  if(ov.length) h+=`<div class="warn">⚠ 逾期未完成的检修/隐患 ${ov.length} 项，请到「检修与隐患」查看。</div>`;
+  return h;
+}
+function bindMetrics(){
+  const el=document.getElementById("ym");
+  if(el) el.onchange=e=>{ curYM=e.target.value; render(); };
+}
+
+/* ============ 设备现状 ============ */
+function renderStatus(){
+  const key=DB.equipment.filter(e=>e.level==="A"&&e.status!=="报废");
+  const abn=DB.equipment.filter(e=>e.status==="在用异常");
+  const rowHtml=(arr)=>arr.length?arr.map(e=>`<tr><td>${esc(e.id)}</td><td>${esc(e.name)}</td><td>${esc(e.cat)}</td>
+    <td><span class="tag ${e.level==="A"?"t-red":e.level==="B"?"t-yel":"t-gry"}">${e.level}</span></td>
+    <td>${esc(e.process)}</td><td>${esc(e.area)}</td>
+    <td><span class="tag ${e.status==="在用正常"?"t-grn":"t-red"}">${esc(e.status)}</span></td>
+    <td>${esc(e.owner)}</td></tr>`).join(""):`<tr><td colspan="8" class="empty">无</td></tr>`;
+  return `<div class="bar"><h2>设备现状</h2><span style="font-size:12px;color:#9ca3af">由设备台账自动生成，随台账修改实时更新</span></div>
+    <div class="panel"><h3>关键设备现状（重要程度=A，共 ${key.length} 台）</h3>
+    <table><thead><tr><th>设备编号</th><th>设备名称</th><th>类别</th><th>重要程度</th><th>工序</th><th>区域</th><th>使用状态</th><th>责任人</th></tr></thead>
+    <tbody>${rowHtml(key)}</tbody></table></div>
+    <div class="panel"><h3>异常设备清单（${abn.length} 台）</h3>
+    <table><thead><tr><th>设备编号</th><th>设备名称</th><th>类别</th><th>重要程度</th><th>工序</th><th>区域</th><th>使用状态</th><th>责任人</th></tr></thead>
+    <tbody>${rowHtml(abn)}</tbody></table></div>`;
+}
+
+/* ============ 表单 ============ */
+let editing={mod:"",i:-1};
+function openForm(mod,i){
+  const m=M[mod];
+  const rec=i>=0?{...DB[mod][i]}:{};
+  editing={mod,i};
+  let h=`<div class="modal" id="modal"><div class="modal-body"><h3>${i>=0?"编辑":"新增"} · ${m.name}</h3><div class="form-grid">`;
+  m.fields.forEach(f=>{
+    if(f.calc) return;
+    const v=rec[f.k]??"";
+    h+=`<div class="${f.full?"full":""}"><label>${f.lb}${f.req?'<span class="req">*</span>':""}</label>`;
+    if(f.t==="sel"){
+      const opts=typeof f.o==="function"?f.o():f.o;
+      let inner='<option value="">-- 请选择 --</option>';
+      opts.forEach(o=>{
+        if(o&&typeof o==="object"&&o.group){
+          inner+=`<optgroup label="${esc(o.group)}">`+
+            o.items.map(it=>`<option value="${esc(it.v)}" ${String(it.v)===String(v)?"selected":""}>${esc(it.t)}</option>`).join("")+
+            `</optgroup>`;
+        }else if(o&&typeof o==="object"){
+          inner+=`<option value="${esc(o.v)}" ${String(o.v)===String(v)?"selected":""}>${esc(o.t)}</option>`;
+        }else{
+          inner+=`<option ${o===v?"selected":""}>${esc(o)}</option>`;
+        }
+      });
+      h+=`<select data-k="${f.k}">${inner}</select>`;
+    }else if(f.t==="ta"){
+      h+=`<textarea data-k="${f.k}">${esc(v)}</textarea>`;
+    }else{
+      const t=f.t==="dt"?"datetime-local":f.t==="date"?"date":f.t==="num"?"number":"text";
+      h+=`<input data-k="${f.k}" type="${t}" value="${esc(v)}" ${f.t==="num"?'step="any"':""}>`;
+    }
+    h+="</div>";
+  });
+  h+=`</div><div class="modal-actions"><button class="btn" data-act="close">取消</button>
+    <button class="btn primary" data-act="save">保存</button></div></div></div>`;
+  document.body.insertAdjacentHTML("beforeend",h);
+}
+function closeModal(){ document.getElementById("modal")?.remove(); }
+function saveForm(){
+  const {mod,i}=editing, m=M[mod];
+  const rec=i>=0?{...DB[mod][i]}:{};
+  document.querySelectorAll("#modal [data-k]").forEach(el=>{
+    rec[el.dataset.k]=el.type==="number"?(el.value===""?"":+el.value):el.value;
+  });
+  // 必填校验
+  for(const f of m.fields){
+    if(f.req&&!f.calc&&!(rec[f.k]??"").toString().trim()){ alert(`请填写/选择：${f.lb}`); return; }
+  }
+  if(mod==="repair"){
+    if(rec.status==="已完工"&&!rec.isFault){ alert("工单标记为已完工前，请先判定「是否计为故障」"); return; }
+    if(rec.isFault==="否"&&!rec.noFaultReason){ alert("不计为故障时，必须选择「不计故障原因」"); return; }
+  }
+  // 报修判定为故障且尚未生成故障记录 → 自动生成
+  if(mod==="repair"&&rec.isFault==="是"&&!rec.faultId){
+    const fid="GZ"+new Date().getFullYear()+String(new Date().getMonth()+1).padStart(2,"0")+String(DB.fault.length+1).padStart(3,"0");
+    DB.fault.push({id:fid,occurTime:rec.reportTime,recoverTime:rec.finishTime,eqId:rec.eqId,part:"",
+      symptom:rec.desc,type:"",cause:"",action:rec.action,handler:rec.assignee,status:"已解决",
+      valid:"有效",repairId:rec.id,parts:rec.parts,remark:""});
+    rec.faultId=fid;
+  }
+  if(i>=0) DB[mod][i]=rec; else DB[mod].push(rec);
+  save(); closeModal(); render();
+}
+
+/* ============ 导出 ============ */
+function exportCSV(mod){
+  const m=M[mod], rows=DB[mod];
+  const head=m.fields.filter(f=>!f.calc||["key","duration","repeat","stock","warn","amount","overdue","remain"].includes(f.k)).map(f=>f.lb);
+  const keys=m.fields.filter(f=>!f.calc||["key","duration","repeat","stock","warn","amount","overdue","remain"].includes(f.k)).map(f=>f.k);
+  const lines=[head.map(esc).join(",")];
+  rows.forEach(r=>{
+    lines.push(keys.map(k=>{
+      const f=m.fields.find(x=>x.k===k);
+      let v=val(r,k,f);
+      if(Array.isArray(v)) v=v.join("|");
+      return '"'+String(v??"").replace(/"/g,'""')+'"';
+    }).join(","));
+  });
+  const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=m.name+".csv"; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ============ 事件 ============ */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tab]");
+  if(t){ curTab=t.dataset.tab; render(); window.scrollTo(0,0); return; }
+  const b=e.target.closest("[data-act]");
+  if(!b) return;
+  const act=b.dataset.act, mod=b.dataset.mod, i=+b.dataset.i;
+  if(act==="add") openForm(mod,-1);
+  else if(act==="edit") openForm(mod,i);
+  else if(act==="del"){
+    if(confirm(`确定删除这条记录吗？`)){ DB[mod].splice(i,1); save(); render(); }
+  }
+  else if(act==="export") exportCSV(mod);
+  else if(act==="close") closeModal();
+  else if(act==="save") saveForm();
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+
+render();
+</script>
+</body>
+</html>
