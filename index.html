@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>锌品车间设备管理系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:#f0f2f5;color:#1f2937;font-size:13px}
@@ -156,11 +157,56 @@ function seed(){
   return {equipment:eq,repair,fault,spare,spareTxn,maint,todo};
 }
 
-/* ============ 数据层 ============ */
+/* ============ 数据层（云端 Supabase + 本地缓存） ============ */
+const SUPABASE_URL = "https://gklpruopyrxurbnyhvxd.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Az-8Hm3d7rNgnLT8hzfHTA_vUyf9b9b";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const KEY="eqms_v1";
-let DB;
-try{ DB=JSON.parse(localStorage.getItem(KEY))||seed(); }catch(e){ DB=seed(); }
-function save(){ localStorage.setItem(KEY,JSON.stringify(DB)); }
+const DOC_ID="main-doc";
+let DB=null;
+let remoteReady=false;
+
+async function loadFromCloud(){
+  try{
+    const {data,error} = await sb.from('records').select('data').eq('id',DOC_ID).single();
+    if(error || !data){
+      DB = seed();
+      await pushToCloud();
+    }else{
+      DB = data.data;
+      localStorage.setItem(KEY, JSON.stringify(DB));
+    }
+    remoteReady=true;
+  }catch(e){
+    console.warn('云端加载失败，使用本地数据', e);
+    if(!DB) DB = seed();
+  }
+  render();
+}
+
+async function pushToCloud(){
+  if(!remoteReady) return;
+  try{
+    await sb.from('records').upsert({id:DOC_ID, data:DB, updated_at:new Date().toISOString()});
+  }catch(e){ console.warn('云端保存失败', e); }
+}
+
+function subscribeChanges(){
+  sb.channel('db-changes')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'records',filter:`id=eq.${DOC_ID}`},(payload)=>{
+      if(payload.new && payload.new.data){
+        DB = payload.new.data;
+        localStorage.setItem(KEY, JSON.stringify(DB));
+        render();
+      }
+    })
+    .subscribe();
+}
+
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(DB));
+  pushToCloud();
+}
 function eqById(id){ return DB.equipment.find(e=>e.id===id); }
 function spareById(id){ return DB.spare.find(s=>s.id===id); }
 
@@ -479,7 +525,6 @@ function saveForm(){
   document.querySelectorAll("#modal [data-k]").forEach(el=>{
     rec[el.dataset.k]=el.type==="number"?(el.value===""?"":+el.value):el.value;
   });
-  // 必填校验
   for(const f of m.fields){
     if(f.req&&!f.calc&&!(rec[f.k]??"").toString().trim()){ alert(`请填写/选择：${f.lb}`); return; }
   }
@@ -487,7 +532,6 @@ function saveForm(){
     if(rec.status==="已完工"&&!rec.isFault){ alert("工单标记为已完工前，请先判定「是否计为故障」"); return; }
     if(rec.isFault==="否"&&!rec.noFaultReason){ alert("不计为故障时，必须选择「不计故障原因」"); return; }
   }
-  // 报修判定为故障且尚未生成故障记录 → 自动生成
   if(mod==="repair"&&rec.isFault==="是"&&!rec.faultId){
     const fid="GZ"+new Date().getFullYear()+String(new Date().getMonth()+1).padStart(2,"0")+String(DB.fault.length+1).padStart(3,"0");
     DB.fault.push({id:fid,occurTime:rec.reportTime,recoverTime:rec.finishTime,eqId:rec.eqId,part:"",
@@ -537,7 +581,11 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 
+/* ============ 初始化：先本地缓存快速渲染，再云端同步 ============ */
+try{ DB=JSON.parse(localStorage.getItem(KEY)); }catch(e){ DB=null; }
+if(!DB){ DB=seed(); }
 render();
+loadFromCloud().then(subscribeChanges);
 </script>
 </body>
 </html>
